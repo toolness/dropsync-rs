@@ -65,6 +65,28 @@ impl DirState {
         }
         DirState { files, subdirs }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.files.len() == 0 && self.subdirs.len() == 0
+    }
+
+    pub fn are_contents_at_least_as_recent_as(&self, other: &DirState) -> bool {
+        for (filename, state) in self.files.iter() {
+            if let Some(other_state) = other.files.get(filename) {
+                if state.modified < other_state.modified {
+                    return false;
+                }
+            }
+        }
+        for (dirname, state) in self.subdirs.iter() {
+            if let Some(other_state) = other.subdirs.get(dirname) {
+                if !state.are_contents_at_least_as_recent_as(other_state) {
+                    return false;
+                }
+            }
+        }
+        true
+    }
 }
 
 impl AppConfig {
@@ -76,9 +98,19 @@ impl AppConfig {
     pub fn sync(&self) {
         let dir_state = DirState::from_dir(&self.path);
         let dropbox_dir_state = DirState::from_dir(&self.dropbox_path);
-        println!("our dir state: {:?}", dir_state);
-        println!("dropbox dir state: {:?}", dropbox_dir_state);
-        println!("are they equal? {}", dir_state == dropbox_dir_state);
+        if dir_state == dropbox_dir_state {
+            println!("  App state matches Dropbox state. Nothing to do!");
+        } else {
+            if !dir_state.is_empty() && dir_state.are_contents_at_least_as_recent_as(&dropbox_dir_state) {
+                println!("  App state is newer than Dropbox state.");
+            } else if !dropbox_dir_state.is_empty() && dropbox_dir_state.are_contents_at_least_as_recent_as(&dir_state) {
+                println!("  Dropbox state is newer than app state.");
+            } else if dir_state.is_empty() && dropbox_dir_state.is_empty() {
+                println!("  Both Dropbox and app state are empty. Nothing to do!");
+            } else {
+                println!("  App state and Dropbox state are in conflict. I'm gonna stay out of this one.");
+            }
+        }
     }
 }
 
