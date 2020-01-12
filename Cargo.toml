@@ -1,0 +1,12 @@
+[package]
+name = "dropsync-rs"
+version = "0.1.0"
+authors = ["Atul Varma <varmaa@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+toml = "0.5"
+dirs = "2.0"
+gethostname = "0.2.1"

@@ -1,0 +1,17 @@
+[app1]
+
+path = "C:\\myapp1\\stuff"
+dropbox_path = "MyAppData/app1"
+
+[app2]
+
+path = "G:\\some\\default\\path"
+dropbox_path = "MyAppData/app2"
+
+[app2.my_first_computer]
+
+path = "F:\\myapp2\\stuff"
+
+[app2.my_second_computer]
+
+path = "C:\\myapp2\\stuff"
