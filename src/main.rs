@@ -32,8 +32,7 @@ struct FileInfo {
 }
 
 impl FileInfo {
-    fn from_dir_entry(entry: &fs::DirEntry) -> Self {
-        let metadata = entry.metadata().unwrap();
+    fn from_metadata(metadata: &fs::Metadata) -> Self {
         if metadata.is_dir() {
             panic!("Directories are not supported!");
         }
@@ -46,17 +45,25 @@ impl FileInfo {
 #[derive(Debug)]
 struct DirState {
     files: HashMap<String, FileInfo>,
+    subdirs: HashMap<String, DirState>,
 }
 
 impl DirState {
     fn from_dir(path: &PathBuf) -> Self {
         let mut files = HashMap::new();
+        let mut subdirs = HashMap::new();
         for result in fs::read_dir(path).unwrap() {
             let entry = result.unwrap();
             let filename = String::from(entry.file_name().to_string_lossy());
-            files.insert(filename, FileInfo::from_dir_entry(&entry));
+            let metadata = entry.metadata().unwrap();
+            if metadata.is_dir() {
+                let subdir = path.join(&filename);
+                subdirs.insert(filename, DirState::from_dir(&subdir));
+            } else {
+                files.insert(filename, FileInfo::from_metadata(&metadata));
+            }
         }
-        DirState { files }
+        DirState { files, subdirs }
     }
 }
 
