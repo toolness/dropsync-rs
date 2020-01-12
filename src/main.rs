@@ -26,25 +26,25 @@ fn get_dropbox_dir() -> PathBuf {
 }
 
 #[derive(Debug)]
-struct FileInfo {
+struct FileState {
     modified: u64,
     size: u64,
 }
 
-impl FileInfo {
+impl FileState {
     fn from_metadata(metadata: &fs::Metadata) -> Self {
         if metadata.is_dir() {
             panic!("Directories are not supported!");
         }
         let size = metadata.len();
         let modified = metadata.modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
-        FileInfo { size, modified }
+        FileState { size, modified }
     }
 }
 
 #[derive(Debug)]
 struct DirState {
-    files: HashMap<String, FileInfo>,
+    files: HashMap<String, FileState>,
     subdirs: HashMap<String, DirState>,
 }
 
@@ -60,7 +60,7 @@ impl DirState {
                 let subdir = path.join(&filename);
                 subdirs.insert(filename, DirState::from_dir(&subdir));
             } else {
-                files.insert(filename, FileInfo::from_metadata(&metadata));
+                files.insert(filename, FileState::from_metadata(&metadata));
             }
         }
         DirState { files, subdirs }
