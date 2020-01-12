@@ -27,12 +27,12 @@ fn get_dropbox_dir() -> PathBuf {
 
 #[derive(Debug, PartialEq)]
 struct FileState {
-    modified: u64,
-    size: u64,
+    pub modified: u64,
+    pub size: u64,
 }
 
 impl FileState {
-    fn from_metadata(metadata: &fs::Metadata) -> Self {
+    pub fn from_metadata(metadata: &fs::Metadata) -> Self {
         if metadata.is_dir() {
             panic!("Directories are not supported!");
         }
@@ -49,7 +49,7 @@ struct DirState {
 }
 
 impl DirState {
-    fn from_dir(path: &PathBuf) -> Self {
+    pub fn from_dir(path: &PathBuf) -> Self {
         let mut files = HashMap::new();
         let mut subdirs = HashMap::new();
         for result in fs::read_dir(path).unwrap() {
