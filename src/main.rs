@@ -25,7 +25,7 @@ fn get_dropbox_dir() -> PathBuf {
     home_dir
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct FileState {
     modified: u64,
     size: u64,
@@ -42,7 +42,7 @@ impl FileState {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct DirState {
     files: HashMap<String, FileState>,
     subdirs: HashMap<String, DirState>,
@@ -78,6 +78,7 @@ impl AppConfig {
         let dropbox_dir_state = DirState::from_dir(&self.dropbox_path);
         println!("our dir state: {:?}", dir_state);
         println!("dropbox dir state: {:?}", dropbox_dir_state);
+        println!("are they equal? {}", dir_state == dropbox_dir_state);
     }
 }
 
