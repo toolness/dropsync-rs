@@ -64,6 +64,9 @@ fn load_config(hostname: &str, config: Value, root_dropbox_path: &PathBuf) -> Ha
 fn load_config_from_dropbox_dir(hostname: &str, root_dropbox_path: &PathBuf) -> HashMap<String, AppConfig> {
     let cfg_file = root_dropbox_path.join("dropsync.toml");
     ensure_path_exists(&cfg_file);
+
+    println!("Loading configuration from {}.", cfg_file.to_string_lossy());
+
     let toml_str = read_to_string(cfg_file).unwrap();
     let value = toml_str.parse::<Value>().unwrap();
 
