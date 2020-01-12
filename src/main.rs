@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::fs::read_to_string;
+use std::time::SystemTime;
+use std::fs;
 use toml::Value;
 
 #[derive(Debug, PartialEq)]
@@ -24,10 +25,52 @@ fn get_dropbox_dir() -> PathBuf {
     home_dir
 }
 
+#[derive(Debug)]
+struct FileInfo {
+    modified: u64,
+    size: u64,
+}
+
+impl FileInfo {
+    fn from_dir_entry(entry: &fs::DirEntry) -> Self {
+        let metadata = entry.metadata().unwrap();
+        if metadata.is_dir() {
+            panic!("Directories are not supported!");
+        }
+        let size = metadata.len();
+        let modified = metadata.modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+        FileInfo { size, modified }
+    }
+}
+
+#[derive(Debug)]
+struct DirState {
+    files: HashMap<String, FileInfo>,
+}
+
+impl DirState {
+    fn from_dir(path: &PathBuf) -> Self {
+        let mut files = HashMap::new();
+        for result in fs::read_dir(path).unwrap() {
+            let entry = result.unwrap();
+            let filename = String::from(entry.file_name().to_string_lossy());
+            files.insert(filename, FileInfo::from_dir_entry(&entry));
+        }
+        DirState { files }
+    }
+}
+
 impl AppConfig {
     pub fn validate(&self) {
         ensure_path_exists(&self.path);
         ensure_path_exists(&self.dropbox_path);
+    }
+
+    pub fn sync(&self) {
+        let dir_state = DirState::from_dir(&self.path);
+        let dropbox_dir_state = DirState::from_dir(&self.dropbox_path);
+        println!("our dir state: {:?}", dir_state);
+        println!("dropbox dir state: {:?}", dropbox_dir_state);
     }
 }
 
@@ -67,7 +110,7 @@ fn load_config_from_dropbox_dir(hostname: &str, root_dropbox_path: &PathBuf) -> 
 
     println!("Loading configuration from {}.", cfg_file.to_string_lossy());
 
-    let toml_str = read_to_string(cfg_file).unwrap();
+    let toml_str = fs::read_to_string(cfg_file).unwrap();
     let value = toml_str.parse::<Value>().unwrap();
 
     load_config(hostname, value, root_dropbox_path)
@@ -85,12 +128,13 @@ fn main() {
     for config in app_configs.values() {
         println!("Syncing app {}.", config.name);
         config.validate();
+        config.sync();
     }
 }
 
 #[test]
 fn test_load_config() {
-    let toml_str = read_to_string("test-data/sample_config.toml").expect("example config file should exist!");
+    let toml_str = fs::read_to_string("test-data/sample_config.toml").expect("example config file should exist!");
     let value = toml_str.parse::<Value>().unwrap();
     let configs = load_config("my_first_computer", value, &PathBuf::from("."));
 
