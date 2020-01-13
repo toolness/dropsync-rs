@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::SystemTime;
 use std::fs;
+use std::process::Command;
 use toml::Value;
 
 #[derive(Debug, PartialEq)]
@@ -144,9 +145,25 @@ impl AppConfig {
             } else if dir_state.is_empty() && dropbox_dir_state.is_empty() {
                 println!("  Both Dropbox and app state are empty. Nothing to do!");
             } else {
-                println!("  App and Dropbox state are in conflict. You will need to resolve this yourself.");
+                println!("  App and Dropbox state are in conflict; manual resolution required.");
+                if ask_yes_or_no("  Open folders in explorer (y/n) ? ") {
+                    open_in_explorer(&self.path);
+                    open_in_explorer(&self.dropbox_path);
+                }
             }
         }
+    }
+}
+
+fn open_in_explorer(path: &PathBuf) {
+    if cfg!(target_os = "windows") {
+        println!("Opening {}.", path.to_string_lossy());
+        Command::new("explorer")
+          .arg(&path.as_os_str())
+          .spawn()
+          .unwrap();
+    } else {
+        unimplemented!();
     }
 }
 
@@ -193,13 +210,18 @@ fn get_app_config_str<'a>(config: &'a Value, app_name: &str, hostname: &str, key
     panic!(err);
 }
 
+fn normalize_path_slashes(path: &str) -> String {
+    return path.replace("/", &std::path::MAIN_SEPARATOR.to_string());
+}
+
 fn load_config(hostname: &str, config: Value, root_dropbox_path: &PathBuf) -> HashMap<String, AppConfig> {
     let mut result = HashMap::new();
     if let Value::Table(table) = config {
         for entry in table.iter() {
             let (name, app_config) = entry;
             let path = PathBuf::from(get_app_config_str(app_config, name, hostname, "path"));
-            let rel_dropbox_path = PathBuf::from(get_app_config_str(app_config, name, hostname, "dropbox_path"));
+            let norm_dropbox_path = normalize_path_slashes(get_app_config_str(app_config, name, hostname, "dropbox_path"));
+            let rel_dropbox_path = PathBuf::from(norm_dropbox_path);
             let dropbox_path = root_dropbox_path.join(rel_dropbox_path);
             result.insert(name.clone(), AppConfig { name: name.clone(), path, dropbox_path });
         }
