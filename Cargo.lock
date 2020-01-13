@@ -116,6 +116,7 @@ version = "0.1.0"
 dependencies = [
  "dirs 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "gethostname 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rprompt 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -230,6 +231,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "rprompt"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "rust-argon2"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -332,6 +338,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum rdrand 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "678054eb77286b51581ba43620cc911abf02758c91f93f479767aed0f90458b2"
 "checksum redox_syscall 0.1.56 (registry+https://github.com/rust-lang/crates.io-index)" = "2439c63f3f6139d1b57529d16bc3b8bb855230c8efcc5d3a896c8bea7c3b1e84"
 "checksum redox_users 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4ecedbca3bf205f8d8f5c2b44d83cd0690e39ee84b951ed649e9f1841132b66d"
+"checksum rprompt 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)" = "b386f4748bdae2aefc96857f5fda07647f851d089420e577831e2a14b45230f8"
 "checksum rust-argon2 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4ca4eaef519b494d1f2848fc602d18816fed808a981aedf4f1f00ceb7c9d32cf"
 "checksum rustc-demangle 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)" = "4c691c0e608126e00913e33f0ccf3727d5fc84573623b8d65b2df340b5201783"
 "checksum serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)" = "414115f25f818d7dfccec8ee535d76949ae78584fc4f79a6f45a904bf8ab4449"

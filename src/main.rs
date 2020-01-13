@@ -44,6 +44,7 @@ impl FileState {
 
 #[derive(Debug, PartialEq)]
 struct DirState {
+    path: PathBuf,
     files: HashMap<String, FileState>,
     subdirs: HashMap<String, DirState>,
 }
@@ -63,11 +64,31 @@ impl DirState {
                 files.insert(filename, FileState::from_metadata(&metadata));
             }
         }
-        DirState { files, subdirs }
+        DirState { path: path.clone(), files, subdirs }
     }
 
     pub fn is_empty(&self) -> bool {
         self.files.len() == 0 && self.subdirs.len() == 0
+    }
+
+    pub fn are_contents_equal_to(&self, other: &DirState) -> bool {
+        if self.files != other.files {
+            return false;
+        }
+        if self.subdirs.len() != other.subdirs.len() {
+            return false;
+        }
+        for (dirname, state) in self.subdirs.iter() {
+            match other.subdirs.get(dirname) {
+                None => { return false; },
+                Some(other_state) => {
+                    if !state.are_contents_equal_to(other_state) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     pub fn are_contents_at_least_as_recent_as(&self, other: &DirState) -> bool {
@@ -87,6 +108,19 @@ impl DirState {
         }
         true
     }
+
+    pub fn copy_into(&self, dest: &PathBuf) {
+        fs::create_dir_all(&dest).unwrap();
+        for filename in self.files.keys() {
+            let src_path = &self.path.join(filename);
+            let dest_path = dest.join(filename);
+            fs::copy(&src_path, &dest_path).unwrap();
+        }
+        for (dirname, dir) in self.subdirs.iter() {
+            let dest_dir = dest.join(dirname);
+            dir.copy_into(&dest_dir);
+        }
+    }
 }
 
 impl AppConfig {
@@ -98,19 +132,50 @@ impl AppConfig {
     pub fn sync(&self) {
         let dir_state = DirState::from_dir(&self.path);
         let dropbox_dir_state = DirState::from_dir(&self.dropbox_path);
-        if dir_state == dropbox_dir_state {
-            println!("  App state matches Dropbox state. Nothing to do!");
+        if dir_state.are_contents_equal_to(&dropbox_dir_state) {
+            println!("  App state matches Dropbox. Nothing to do!");
         } else {
             if !dir_state.is_empty() && dir_state.are_contents_at_least_as_recent_as(&dropbox_dir_state) {
-                println!("  App state is newer than Dropbox state.");
+                println!("  App state is newer than Dropbox.");
+                copy_files_with_confirmation(&dir_state, &self.dropbox_path);
             } else if !dropbox_dir_state.is_empty() && dropbox_dir_state.are_contents_at_least_as_recent_as(&dir_state) {
-                println!("  Dropbox state is newer than app state.");
+                println!("  Dropbox state is newer than app.");
+                copy_files_with_confirmation(&dropbox_dir_state, &self.path);
             } else if dir_state.is_empty() && dropbox_dir_state.is_empty() {
                 println!("  Both Dropbox and app state are empty. Nothing to do!");
             } else {
-                println!("  App state and Dropbox state are in conflict. I'm gonna stay out of this one.");
+                println!("  App and Dropbox state are in conflict. You will need to resolve this yourself.");
             }
         }
+    }
+}
+
+fn parse_yes_or_no(value: &str) -> Option<bool> {
+    let lower = value.to_lowercase();
+    if lower.starts_with("y") {
+        Some(true)
+    } else if lower.starts_with("n") {
+        Some(false)
+    } else {
+        None
+    }
+}
+
+fn ask_yes_or_no(prompt: &str) -> bool {
+    loop {
+        let reply = rprompt::prompt_reply_stdout(prompt).unwrap();
+        if let Some(response) = parse_yes_or_no(&reply) {
+            return response;
+        }
+    }
+}
+
+fn copy_files_with_confirmation(from_dir: &DirState, to_dir: &PathBuf) {
+    let yes = ask_yes_or_no("  Proceed with synchronization (y/n) ? ");
+    if yes {
+        from_dir.copy_into(to_dir);
+    } else {
+        println!("  Okay, not doing anything.");
     }
 }
 
