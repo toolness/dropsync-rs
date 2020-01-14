@@ -5,25 +5,14 @@ use std::fs;
 use std::process::Command;
 use toml::Value;
 
+mod dropbox;
+mod util;
+
 #[derive(Debug, PartialEq)]
 struct AppConfig {
     pub name: String,
     pub path: PathBuf,
     pub dropbox_path: PathBuf,
-}
-
-fn ensure_path_exists(value: &PathBuf) {
-    if !value.exists() {
-        let err = format!("Path '{}' does not exist!", value.to_string_lossy());
-        panic!(err);
-    }
-}
-
-fn get_dropbox_dir() -> PathBuf {
-    let mut home_dir = dirs::home_dir().expect("User should have a home directory!");
-    home_dir.push("Dropbox");
-    ensure_path_exists(&home_dir);
-    home_dir
 }
 
 #[derive(Debug, PartialEq)]
@@ -126,8 +115,8 @@ impl DirState {
 
 impl AppConfig {
     pub fn validate(&self) {
-        ensure_path_exists(&self.path);
-        ensure_path_exists(&self.dropbox_path);
+        util::ensure_path_exists(&self.path);
+        util::ensure_path_exists(&self.dropbox_path);
     }
 
     pub fn sync(&self) {
@@ -233,7 +222,7 @@ fn load_config(hostname: &str, config: Value, root_dropbox_path: &PathBuf) -> Ha
 
 fn load_config_from_dropbox_dir(hostname: &str, root_dropbox_path: &PathBuf) -> HashMap<String, AppConfig> {
     let cfg_file = root_dropbox_path.join("dropsync.toml");
-    ensure_path_exists(&cfg_file);
+    util::ensure_path_exists(&cfg_file);
 
     println!("Loading configuration from {}.", cfg_file.to_string_lossy());
 
@@ -249,7 +238,7 @@ fn main() {
 
     println!("Syncing apps on host {}.", hostname);
 
-    let dropbox_dir = get_dropbox_dir();
+    let dropbox_dir = dropbox::get_dropbox_dir();
     let app_configs = load_config_from_dropbox_dir(&hostname, &dropbox_dir);
 
     for config in app_configs.values() {
