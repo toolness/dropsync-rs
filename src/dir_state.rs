@@ -123,4 +123,64 @@ impl DirState {
             dir.copy_into(&dest_dir);
         }
     }
+
+    pub fn remove_extraneous_files_from(&self, root: &PathBuf) {
+        for result in fs::read_dir(root).unwrap() {
+            let entry = result.unwrap();
+            let filepath = entry.path();
+            let filename = String::from(entry.file_name().to_string_lossy());
+            let metadata = entry.metadata().unwrap();
+            if metadata.is_dir() {
+                if let Some(subdir) = self.subdirs.get(&filename) {
+                    subdir.remove_extraneous_files_from(&filepath);
+                } else {
+                    fs::remove_dir_all(&filepath).unwrap();
+                }
+            } else {
+                if !self.files.contains_key(&filename) {
+                    fs::remove_file(&filepath).unwrap();
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn test_dirstate() {
+    // Setup: create/clear the temporary test dir.
+    let tmp_dir = PathBuf::from(".test_dirstate");
+    if tmp_dir.exists() {
+        fs::remove_dir_all(&tmp_dir).unwrap();
+    }
+    fs::create_dir(&tmp_dir).unwrap();
+
+    // Copy the source test dir into the temp test dir.
+    let src_dir = PathBuf::from("test-data/dirstate_test");
+    let src_state = DirState::from_dir(&src_dir);
+    assert!(!src_state.is_empty());
+    src_state.copy_into(&tmp_dir);
+
+    let mut tmp_state = DirState::from_dir(&tmp_dir);
+    assert!(src_state.are_contents_equal_to(&tmp_state));
+    assert!(tmp_state.are_contents_equal_to(&src_state));
+
+    // Make a subdirectory in the temp test dir.
+    let tmp_subdir = tmp_dir.join("another_subdir");
+    fs::create_dir(&tmp_subdir).unwrap();
+    assert!(DirState::from_dir(&tmp_subdir).is_empty());
+
+    tmp_state = DirState::from_dir(&tmp_dir);
+    assert!(!src_state.are_contents_equal_to(&tmp_state));
+
+    // Add a file to the temp test dir.
+    let tmp_file = tmp_dir.join("somefile");
+    fs::write(&tmp_file, "blarg").unwrap();
+
+    // Remove files from the temp test dir not in the source test dir.
+    src_state.remove_extraneous_files_from(&tmp_dir);
+    tmp_state = DirState::from_dir(&tmp_dir);
+    assert!(src_state.are_contents_equal_to(&tmp_state));
+
+    // Teardown: remove the temporary test dir.
+    fs::remove_dir_all(&tmp_dir).unwrap();
 }

@@ -50,6 +50,7 @@ fn copy_files_with_confirmation(from_dir: &DirState, to_dir: &PathBuf) {
     let yes = ask::ask_yes_or_no("  Proceed with synchronization (y/n) ? ");
     if yes {
         from_dir.copy_into(to_dir);
+        from_dir.remove_extraneous_files_from(to_dir);
     } else {
         println!("  Okay, not doing anything.");
     }
