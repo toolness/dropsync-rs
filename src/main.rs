@@ -29,10 +29,10 @@ impl AppConfig {
         if dir_state.are_contents_equal_to(&dropbox_dir_state) {
             println!("  App state matches Dropbox. Nothing to do!");
         } else {
-            if !dir_state.is_empty() && dir_state.are_contents_at_least_as_recent_as(&dropbox_dir_state) {
+            if dir_state.are_contents_generally_newer_than(&dropbox_dir_state) {
                 println!("  App state is newer than Dropbox.");
                 copy_files_with_confirmation(&dir_state, &self.dropbox_path);
-            } else if !dropbox_dir_state.is_empty() && dropbox_dir_state.are_contents_at_least_as_recent_as(&dir_state) {
+            } else if dropbox_dir_state.are_contents_generally_newer_than(&dir_state) {
                 println!("  Dropbox state is newer than app.");
                 copy_files_with_confirmation(&dropbox_dir_state, &self.path);
             } else if dir_state.is_empty() && dropbox_dir_state.is_empty() {

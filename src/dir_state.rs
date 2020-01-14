@@ -69,22 +69,46 @@ impl DirState {
         return true;
     }
 
-    pub fn are_contents_at_least_as_recent_as(&self, other: &DirState) -> bool {
+    pub fn are_any_contents_newer_than(&self, other: &DirState) -> bool {
         for (filename, state) in self.files.iter() {
             if let Some(other_state) = other.files.get(filename) {
-                if state.modified < other_state.modified {
-                    return false;
+                if state.modified > other_state.modified {
+                    return true;
                 }
             }
         }
         for (dirname, state) in self.subdirs.iter() {
             if let Some(other_state) = other.subdirs.get(dirname) {
-                if !state.are_contents_at_least_as_recent_as(other_state) {
-                    return false;
+                if state.are_any_contents_newer_than(other_state) {
+                    return true;
                 }
             }
         }
-        true
+        false
+    }
+
+    pub fn are_any_contents_older_than(&self, other: &DirState) -> bool {
+        for (filename, state) in self.files.iter() {
+            if let Some(other_state) = other.files.get(filename) {
+                if state.modified < other_state.modified {
+                    return true;
+                }
+            }
+        }
+        for (dirname, state) in self.subdirs.iter() {
+            if let Some(other_state) = other.subdirs.get(dirname) {
+                if state.are_any_contents_older_than(other_state) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    pub fn are_contents_generally_newer_than(&self, other: &DirState) -> bool {
+        !self.is_empty() &&
+        !self.are_any_contents_older_than(other) &&
+        self.are_any_contents_newer_than(other)
     }
 
     pub fn copy_into(&self, dest: &PathBuf) {
