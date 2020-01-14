@@ -7,6 +7,7 @@ use toml::Value;
 mod dir_state;
 mod dropbox;
 mod util;
+mod ask;
 
 use dir_state::DirState;
 
@@ -39,7 +40,7 @@ impl AppConfig {
                 println!("  Both Dropbox and app state are empty. Nothing to do!");
             } else {
                 println!("  App and Dropbox state are in conflict; manual resolution required.");
-                if ask_yes_or_no("  Open folders in explorer (y/n) ? ") {
+                if ask::ask_yes_or_no("  Open folders in explorer (y/n) ? ") {
                     open_in_explorer(&self.path);
                     open_in_explorer(&self.dropbox_path);
                 }
@@ -60,28 +61,8 @@ fn open_in_explorer(path: &PathBuf) {
     }
 }
 
-fn parse_yes_or_no(value: &str) -> Option<bool> {
-    let lower = value.to_lowercase();
-    if lower.starts_with("y") {
-        Some(true)
-    } else if lower.starts_with("n") {
-        Some(false)
-    } else {
-        None
-    }
-}
-
-fn ask_yes_or_no(prompt: &str) -> bool {
-    loop {
-        let reply = rprompt::prompt_reply_stdout(prompt).unwrap();
-        if let Some(response) = parse_yes_or_no(&reply) {
-            return response;
-        }
-    }
-}
-
 fn copy_files_with_confirmation(from_dir: &DirState, to_dir: &PathBuf) {
-    let yes = ask_yes_or_no("  Proceed with synchronization (y/n) ? ");
+    let yes = ask::ask_yes_or_no("  Proceed with synchronization (y/n) ? ");
     if yes {
         from_dir.copy_into(to_dir);
     } else {
