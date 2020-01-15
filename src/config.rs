@@ -4,8 +4,6 @@ use toml::Value;
 
 use self::super::util;
 
-pub type Config = HashMap<String, AppConfig>;
-
 #[derive(Debug, PartialEq)]
 pub struct AppConfig {
     pub name: String,

@@ -18,6 +18,7 @@ Synchronize app files with Dropbox.
 
 Usage:
   dropsync
+  dropsync config
   dropsync explore <app>
   dropsync --version
   dropsync (-h | --help)
@@ -26,6 +27,7 @@ Usage:
 #[derive(Debug, Deserialize)]
 struct Args {
     cmd_explore: bool,
+    cmd_config: bool,
     arg_app: Option<String>,
 }
 
@@ -63,16 +65,6 @@ fn copy_files_with_confirmation(from_dir: &DirState, to_dir: &PathBuf) {
     }
 }
 
-fn load_config_from_dropbox_dir(hostname: &str, root_dropbox_path: &PathBuf) -> config::Config {
-    let cfg_file = root_dropbox_path.join("dropsync.toml");
-    util::ensure_path_exists(&cfg_file);
-
-    println!("Loading config for {} from {}.", hostname, cfg_file.to_string_lossy());
-
-    let toml_str = fs::read_to_string(cfg_file).unwrap();
-    config::load_config(hostname, &toml_str, root_dropbox_path)
-}
-
 fn main() {
     let version = VERSION.to_owned();
     let args: Args = docopt::Docopt::new(USAGE)
@@ -83,7 +75,18 @@ fn main() {
     let hostname = raw_hostname.to_string_lossy();
 
     let dropbox_dir = dropbox::get_dropbox_dir();
-    let app_configs = load_config_from_dropbox_dir(&hostname, &dropbox_dir);
+    let cfg_file = dropbox_dir.join("dropsync.toml");
+    util::ensure_path_exists(&cfg_file);
+
+    if args.cmd_config {
+        explorer::open_in_explorer(&cfg_file);
+        return;
+    }
+
+    println!("Loading config for {} from {}.", hostname, cfg_file.to_string_lossy());
+
+    let toml_str = fs::read_to_string(cfg_file).unwrap();
+    let app_configs = config::load_config(&hostname, &toml_str, &dropbox_dir);
 
     if args.cmd_explore {
         let app_name = args.arg_app.unwrap();
