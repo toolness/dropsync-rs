@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use std::fs;
+use serde::Deserialize;
 
 mod dir_state;
 mod dropbox;
@@ -9,6 +10,24 @@ mod config;
 mod explorer;
 
 use dir_state::DirState;
+
+const VERSION: &'static str = "1.0.0";
+
+const USAGE: &'static str = "
+Synchronize app files with Dropbox.
+
+Usage:
+  dropsync
+  dropsync explore <app>
+  dropsync --version
+  dropsync (-h | --help)
+";
+
+#[derive(Debug, Deserialize)]
+struct Args {
+    cmd_explore: bool,
+    arg_app: Option<String>,
+}
 
 fn sync_app(app: &config::AppConfig) {
     let dir_state = DirState::from_dir(&app.path);
@@ -48,24 +67,39 @@ fn load_config_from_dropbox_dir(hostname: &str, root_dropbox_path: &PathBuf) -> 
     let cfg_file = root_dropbox_path.join("dropsync.toml");
     util::ensure_path_exists(&cfg_file);
 
-    println!("Loading configuration from {}.", cfg_file.to_string_lossy());
+    println!("Loading config for {} from {}.", hostname, cfg_file.to_string_lossy());
 
     let toml_str = fs::read_to_string(cfg_file).unwrap();
     config::load_config(hostname, &toml_str, root_dropbox_path)
 }
 
 fn main() {
+    let version = VERSION.to_owned();
+    let args: Args = docopt::Docopt::new(USAGE)
+        .and_then(|d| d.version(Some(version)).deserialize())
+        .unwrap_or_else(|e| e.exit());
+
     let raw_hostname = gethostname::gethostname();
     let hostname = raw_hostname.to_string_lossy();
-
-    println!("Syncing apps on host {}.", hostname);
 
     let dropbox_dir = dropbox::get_dropbox_dir();
     let app_configs = load_config_from_dropbox_dir(&hostname, &dropbox_dir);
 
-    for config in app_configs.values() {
-        println!("Syncing app {}.", config.name);
-        config.validate();
-        sync_app(config);
+    if args.cmd_explore {
+        let app_name = args.arg_app.unwrap();
+        if let Some(config) = app_configs.get(&app_name) {
+            explorer::open_in_explorer(&config.path);
+            explorer::open_in_explorer(&config.dropbox_path);
+        } else {
+            let app_names = app_configs.keys().map(|s| format!("'{}'", s)).collect::<Vec<String>>();
+            println!("App '{}' not found! Please choose from {}.", &app_name, app_names.join(", "));
+            std::process::exit(1);
+        }
+    } else {
+        for config in app_configs.values() {
+            println!("Syncing app {}.", config.name);
+            config.validate();
+            sync_app(config);
+        }
     }
 }
