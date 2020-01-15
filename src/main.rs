@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 use std::fs;
-use std::process::Command;
 
 mod dir_state;
 mod dropbox;
 mod util;
 mod ask;
 mod config;
+mod explorer;
 
 use dir_state::DirState;
 
@@ -27,22 +27,10 @@ fn sync_app(app: &config::AppConfig) {
         } else {
             println!("  App and Dropbox state are in conflict; manual resolution required.");
             if ask::ask_yes_or_no("  Open folders in explorer (y/n) ? ") {
-                open_in_explorer(&app.path);
-                open_in_explorer(&app.dropbox_path);
+                explorer::open_in_explorer(&app.path);
+                explorer::open_in_explorer(&app.dropbox_path);
             }
         }
-    }
-}
-
-fn open_in_explorer(path: &PathBuf) {
-    if cfg!(target_os = "windows") {
-        println!("Opening {}.", path.to_string_lossy());
-        Command::new("explorer")
-          .arg(&path.as_os_str())
-          .spawn()
-          .unwrap();
-    } else {
-        unimplemented!();
     }
 }
 
