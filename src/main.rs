@@ -22,6 +22,10 @@ Usage:
   dropsync explore <app>
   dropsync --version
   dropsync (-h | --help)
+
+Options:
+  -h --help     Show this screen.
+  --version     Show version.
 ";
 
 #[derive(Debug, Deserialize)]
