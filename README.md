@@ -37,12 +37,10 @@ synchronize like so:
 
 ```toml
 [MyFunkyGame]
-
 path = "C:\\Users\\Atul\\AppData\\Local\\MyFunkyGame\\Saved\\SaveGames"
 dropbox_path = "Games/MyFunkyGame"
 
 [MyOtherGame]
-
 path = "C:\\Users\\Atul\\Documents\\My Games\\MyFunkyGame"
 dropbox_path = "Games/MyFunkyGame"
 ```
@@ -61,7 +59,6 @@ host-specific configuration overrides, e.g.:
 
 ```toml
 [MyFunkyGame]
-
 # The default app path on all computers unless overridden.
 path = "C:\\Users\\Atul\\AppData\\Local\\MyFunkyGame\\Saved\\SaveGames"
 dropbox_path = "Games/MyFunkyGame"
