@@ -1,5 +1,6 @@
-This is a simple tool I wrote to help me synchronize application-specific
-data (usually saved game data) across multiple computers using Dropbox.
+This is a command-line tool I, Atul Varma, wrote to help me synchronize
+application-specific data (usually saved game data) across multiple
+computers using Dropbox.
 
 Note that this tool doesn't actually use the network itself: it simply
 assumes that the directory `Dropbox`, located off the user's home directory,
