@@ -64,7 +64,7 @@ path = "C:\\Users\\Atul\\AppData\\Local\\MyFunkyGame\\Saved\\SaveGames"
 dropbox_path = "Games/MyFunkyGame"
 
 [MyFunkyGame.MY_WEIRD_DESKTOP_COMPUTER]
-# This will override the default app path.
+# This will override the default app path on MY_WEIRD_DESKTOP_COMPUTER.
 path = "F:\\MyFunkyGame\\Saved\\SaveGames"
 ```
 
