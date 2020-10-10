@@ -53,6 +53,8 @@ synchronize and has the following entries:
   and save its data.
 * `dropbox_path` is the path relative to the Dropbox folder where the
   data will be synchronized.
+* `disabled` is an optional boolean; if `true`, the application
+  entry will be ignored.
 
 If different computers have the applications at different locations, a
 separate subsection denoted by the computer's hostname can store
@@ -106,3 +108,14 @@ the newer folder are deleted.
 If the contents of both folders aren't exactly equal, and if
 neither is judged to be newer than the other, then the user
 is prompted to manually resolve the conflict.
+
+## Version history
+
+### 1.0.0
+
+Initial release.
+
+### 1.1.0 - 2020-10-10
+
+* Applications are now synced in alphabetical order.
+* Added support for the `disabled` field to `dropsync.toml`.

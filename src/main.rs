@@ -11,7 +11,7 @@ mod explorer;
 
 use dir_state::DirState;
 
-const VERSION: &'static str = "1.0.0";
+const VERSION: &'static str = "1.1.0";
 
 const USAGE: &'static str = "
 Synchronize app files with Dropbox.
@@ -106,7 +106,7 @@ fn main() {
         let mut sorted_configs: Vec<&config::AppConfig> = app_configs.values().collect();
         sorted_configs.sort_by(|a, b| a.name.cmp(&b.name));
 
-        for config in sorted_configs.iter() {
+        for config in sorted_configs.iter().filter(|cfg| !cfg.disabled) {
             println!("Syncing app {}.", config.name);
             config.validate();
             sync_app(config);

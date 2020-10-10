@@ -9,6 +9,7 @@ pub struct AppConfig {
     pub name: String,
     pub path: PathBuf,
     pub dropbox_path: PathBuf,
+    pub disabled: bool,
 }
 
 impl AppConfig {
@@ -20,6 +21,19 @@ impl AppConfig {
 
 fn normalize_path_slashes(path: &str) -> String {
     return path.replace("/", &std::path::MAIN_SEPARATOR.to_string());
+}
+
+fn get_app_config_bool(config: &Value, hostname: &str, key: &str, default: bool) -> bool {
+    let host_config = config.get(hostname);
+    if let Some(Value::Table(table)) = host_config {
+        if let Some(Value::Boolean(s)) = table.get(key) {
+            return *s;
+        }
+    }
+    if let Some(Value::Boolean(s)) = config.get(key) {
+        return *s;
+    }
+    default
 }
 
 fn get_app_config_str<'a>(config: &'a Value, app_name: &str, hostname: &str, key: &str) -> &'a str {
@@ -46,7 +60,8 @@ pub fn load_config(hostname: &str, config_toml: &str, root_dropbox_path: &PathBu
             let norm_dropbox_path = normalize_path_slashes(get_app_config_str(app_config, name, hostname, "dropbox_path"));
             let rel_dropbox_path = PathBuf::from(norm_dropbox_path);
             let dropbox_path = root_dropbox_path.join(rel_dropbox_path);
-            result.insert(name.clone(), AppConfig { name: name.clone(), path, dropbox_path });
+            let disabled = get_app_config_bool(app_config, hostname, "disabled", false);
+            result.insert(name.clone(), AppConfig { name: name.clone(), path, dropbox_path, disabled });
         }
     } else {
         panic!("The top-level value of a config file should be a table!");
@@ -64,11 +79,15 @@ fn test_load_config() {
     let mut expected = HashMap::new();
     expected.insert(
         String::from("app1"),
-        AppConfig { name: String::from("app1"), path: PathBuf::from("C:\\myapp1\\stuff"), dropbox_path: PathBuf::from("./MyAppData/app1") }
+        AppConfig { name: String::from("app1"), path: PathBuf::from("C:\\myapp1\\stuff"), dropbox_path: PathBuf::from("./MyAppData/app1"), disabled: false }
     );
     expected.insert(
         String::from("app2"),
-        AppConfig { name: String::from("app2"), path: PathBuf::from("F:\\myapp2\\stuff"), dropbox_path: PathBuf::from("./MyAppData/app2") }
+        AppConfig { name: String::from("app2"), path: PathBuf::from("F:\\myapp2\\stuff"), dropbox_path: PathBuf::from("./MyAppData/app2"), disabled: false }
+    );
+    expected.insert(
+        String::from("app3"),
+        AppConfig { name: String::from("app3"), path: PathBuf::from("G:\\app3"), dropbox_path: PathBuf::from("./MyAppData/app3"), disabled: true }
     );
 
     assert_eq!(expected, configs);

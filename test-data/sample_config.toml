@@ -8,6 +8,11 @@ dropbox_path = "MyAppData/app1"
 path = "G:\\some\\default\\path"
 dropbox_path = "MyAppData/app2"
 
+[app3]
+path = "G:\\app3"
+dropbox_path = "MyAppData/app3"
+disabled = true
+
 [app2.my_first_computer]
 
 path = "F:\\myapp2\\stuff"
