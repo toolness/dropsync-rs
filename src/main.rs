@@ -103,7 +103,10 @@ fn main() {
             std::process::exit(1);
         }
     } else {
-        for config in app_configs.values() {
+        let mut sorted_configs: Vec<&config::AppConfig> = app_configs.values().collect();
+        sorted_configs.sort_by(|a, b| a.name.cmp(&b.name));
+
+        for config in sorted_configs.iter() {
             println!("Syncing app {}.", config.name);
             config.validate();
             sync_app(config);
