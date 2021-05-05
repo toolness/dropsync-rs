@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
 use std::fs;
 use serde::Deserialize;
 
@@ -11,7 +12,7 @@ mod explorer;
 
 use dir_state::DirState;
 
-const VERSION: &'static str = "1.1.0";
+const VERSION: &'static str = "1.2.0";
 
 const USAGE: &'static str = "
 Synchronize app files with Dropbox.
@@ -20,6 +21,7 @@ Usage:
   dropsync
   dropsync config
   dropsync explore <app>
+  dropsync play <app>
   dropsync --version
   dropsync (-h | --help)
 
@@ -32,6 +34,7 @@ Options:
 struct Args {
     cmd_explore: bool,
     cmd_config: bool,
+    cmd_play: bool,
     arg_app: Option<String>,
 }
 
@@ -69,6 +72,17 @@ fn copy_files_with_confirmation(from_dir: &DirState, to_dir: &PathBuf) {
     }
 }
 
+fn play(executable: &PathBuf) {
+    let dir = executable.parent()
+        .expect("executable should have a parent directory"); 
+    let mut child = Command::new(executable)
+        .current_dir(dir)
+        .stdin(Stdio::inherit())
+        .spawn()
+        .expect("process failed to execute");
+    child.wait().expect("failed to wait on child");
+}
+
 fn main() {
     let version = VERSION.to_owned();
     let args: Args = docopt::Docopt::new(USAGE)
@@ -92,11 +106,25 @@ fn main() {
     let toml_str = fs::read_to_string(cfg_file).unwrap();
     let app_configs = config::load_config(&hostname, &toml_str, &dropbox_dir);
 
-    if args.cmd_explore {
+    if args.cmd_explore || args.cmd_play {
         let app_name = args.arg_app.unwrap();
         if let Some(config) = app_configs.get(&app_name) {
-            explorer::open_in_explorer(&config.path);
-            explorer::open_in_explorer(&config.dropbox_path);
+            if args.cmd_explore {
+                explorer::open_in_explorer(&config.path);
+                explorer::open_in_explorer(&config.dropbox_path);
+            } else {
+                assert_eq!(args.cmd_play, true);
+                if let Some(play_path) = &config.play_path {
+                    config.validate();
+                    sync_app(config);
+                    play(play_path);
+                    rprompt::prompt_reply_stdout("Done running app, press enter to re-sync App/Dropbox states.").unwrap();
+                    sync_app(config);
+                } else {
+                    println!("No play_path is defined for {}!", app_name);
+                    std::process::exit(1);
+                }
+            }
         } else {
             let app_names = app_configs.keys().map(|s| format!("'{}'", s)).collect::<Vec<String>>();
             println!("App '{}' not found! Please choose from {}.", &app_name, app_names.join(", "));

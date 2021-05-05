@@ -8,6 +8,7 @@ use self::super::util;
 pub struct AppConfig {
     pub name: String,
     pub path: PathBuf,
+    pub play_path: Option<PathBuf>,
     pub dropbox_path: PathBuf,
     pub disabled: bool,
 }
@@ -36,18 +37,26 @@ fn get_app_config_bool(config: &Value, hostname: &str, key: &str, default: bool)
     default
 }
 
-fn get_app_config_str<'a>(config: &'a Value, app_name: &str, hostname: &str, key: &str) -> &'a str {
+fn get_optional_app_config_str<'a>(config: &'a Value, hostname: &str, key: &str) -> Option<&'a str> {
     let host_config = config.get(hostname);
     if let Some(Value::Table(table)) = host_config {
         if let Some(Value::String(s)) = table.get(key) {
-            return s;
+            return Some(s);
         }
     }
     if let Some(Value::String(s)) = config.get(key) {
-        return s;
+        return Some(s);
     }
-    let err = format!("Unable to find config key '{}' for app '{}' and hostname '{}'!", key, app_name, hostname);
-    panic!(err);
+    None
+}
+
+fn get_app_config_str<'a>(config: &'a Value, app_name: &str, hostname: &str, key: &str) -> &'a str {
+    if let Some(s) = get_optional_app_config_str(config, hostname, key) {
+        s
+    } else {
+        let err = format!("Unable to find config key '{}' for app '{}' and hostname '{}'!", key, app_name, hostname);
+        panic!(err);    
+    }
 }
 
 pub fn load_config(hostname: &str, config_toml: &str, root_dropbox_path: &PathBuf) -> HashMap<String, AppConfig> {
@@ -61,7 +70,12 @@ pub fn load_config(hostname: &str, config_toml: &str, root_dropbox_path: &PathBu
             let rel_dropbox_path = PathBuf::from(norm_dropbox_path);
             let dropbox_path = root_dropbox_path.join(rel_dropbox_path);
             let disabled = get_app_config_bool(app_config, hostname, "disabled", false);
-            result.insert(name.clone(), AppConfig { name: name.clone(), path, dropbox_path, disabled });
+            let play_path = if let Some(play_path_str) = get_optional_app_config_str(app_config, hostname, "play_path") {
+                Some(PathBuf::from(play_path_str))
+            } else {
+                None
+            };
+            result.insert(name.clone(), AppConfig { name: name.clone(), path, dropbox_path, disabled, play_path });
         }
     } else {
         panic!("The top-level value of a config file should be a table!");
@@ -79,15 +93,15 @@ fn test_load_config() {
     let mut expected = HashMap::new();
     expected.insert(
         String::from("app1"),
-        AppConfig { name: String::from("app1"), path: PathBuf::from("C:\\myapp1\\stuff"), dropbox_path: PathBuf::from("./MyAppData/app1"), disabled: false }
+        AppConfig { name: String::from("app1"), path: PathBuf::from("C:\\myapp1\\stuff"), dropbox_path: PathBuf::from("./MyAppData/app1"), disabled: false, play_path: None }
     );
     expected.insert(
         String::from("app2"),
-        AppConfig { name: String::from("app2"), path: PathBuf::from("F:\\myapp2\\stuff"), dropbox_path: PathBuf::from("./MyAppData/app2"), disabled: false }
+        AppConfig { name: String::from("app2"), path: PathBuf::from("F:\\myapp2\\stuff"), dropbox_path: PathBuf::from("./MyAppData/app2"), disabled: false, play_path: None }
     );
     expected.insert(
         String::from("app3"),
-        AppConfig { name: String::from("app3"), path: PathBuf::from("G:\\app3"), dropbox_path: PathBuf::from("./MyAppData/app3"), disabled: true }
+        AppConfig { name: String::from("app3"), path: PathBuf::from("G:\\app3"), dropbox_path: PathBuf::from("./MyAppData/app3"), disabled: true, play_path: None }
     );
 
     assert_eq!(expected, configs);
