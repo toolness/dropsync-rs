@@ -66,6 +66,7 @@ fn copy_files_with_confirmation(from_dir: &DirState, to_dir: &PathBuf, should_as
     let yes = if should_ask {
         ask::ask_yes_or_no("  Proceed with synchronization (y/n) ? ")
     } else {
+        println!("  Synchronizing files.");
         true
     };
     if yes {
