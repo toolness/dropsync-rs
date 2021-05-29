@@ -38,7 +38,7 @@ struct Args {
     arg_app: Option<String>,
 }
 
-fn sync_app(app: &config::AppConfig) {
+fn sync_app(app: &config::AppConfig, confirm_if_app_is_newer: bool) {
     let dir_state = DirState::from_dir(&app.path);
     let dropbox_dir_state = DirState::from_dir(&app.dropbox_path);
     if dir_state.are_contents_equal_to(&dropbox_dir_state) {
@@ -46,10 +46,10 @@ fn sync_app(app: &config::AppConfig) {
     } else {
         if dir_state.are_contents_generally_newer_than(&dropbox_dir_state) {
             println!("  App state is newer than Dropbox.");
-            copy_files_with_confirmation(&dir_state, &app.dropbox_path);
+            copy_files_with_confirmation(&dir_state, &app.dropbox_path, confirm_if_app_is_newer);
         } else if dropbox_dir_state.are_contents_generally_newer_than(&dir_state) {
             println!("  Dropbox state is newer than app.");
-            copy_files_with_confirmation(&dropbox_dir_state, &app.path);
+            copy_files_with_confirmation(&dropbox_dir_state, &app.path, true);
         } else if dir_state.is_empty() && dropbox_dir_state.is_empty() {
             println!("  Both Dropbox and app state are empty. Nothing to do!");
         } else {
@@ -62,8 +62,12 @@ fn sync_app(app: &config::AppConfig) {
     }
 }
 
-fn copy_files_with_confirmation(from_dir: &DirState, to_dir: &PathBuf) {
-    let yes = ask::ask_yes_or_no("  Proceed with synchronization (y/n) ? ");
+fn copy_files_with_confirmation(from_dir: &DirState, to_dir: &PathBuf, should_ask: bool) {
+    let yes = if should_ask {
+        ask::ask_yes_or_no("  Proceed with synchronization (y/n) ? ")
+    } else {
+        true
+    };
     if yes {
         from_dir.copy_into(to_dir);
         from_dir.remove_extraneous_files_from(to_dir);
@@ -116,10 +120,11 @@ fn main() {
                 assert_eq!(args.cmd_play, true);
                 if let Some(play_path) = &config.play_path {
                     config.validate();
-                    sync_app(config);
+                    sync_app(config, true);
                     play(play_path);
                     rprompt::prompt_reply_stdout("Done running app, press enter to re-sync App/Dropbox states.").unwrap();
-                    sync_app(config);
+                    // Don't ask anything if the app is newer, since we fully expect that to be the case.
+                    sync_app(config, false);
                 } else {
                     println!("No play_path is defined for {}!", app_name);
                     std::process::exit(1);
@@ -137,7 +142,7 @@ fn main() {
         for config in sorted_configs.iter().filter(|cfg| !cfg.disabled) {
             println!("Syncing app {}.", config.name);
             config.validate();
-            sync_app(config);
+            sync_app(config, true);
         }
     }
 }
