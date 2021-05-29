@@ -55,7 +55,7 @@ fn get_app_config_str<'a>(config: &'a Value, app_name: &str, hostname: &str, key
         s
     } else {
         let err = format!("Unable to find config key '{}' for app '{}' and hostname '{}'!", key, app_name, hostname);
-        panic!(err);    
+        panic!("{}", err);
     }
 }
 
