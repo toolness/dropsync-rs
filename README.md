@@ -55,6 +55,10 @@ synchronize and has the following entries:
   data will be synchronized.
 * `disabled` is an optional boolean; if `true`, the application
   entry will be ignored.
+* `play_path` is the optional absolute path to where the
+  application's executable is. If provided, you will be able to
+  use the `dropsync play <app name>` command, which may be
+  convenient.
 
 If different computers have the applications at different locations, a
 separate subsection denoted by the computer's hostname can store
@@ -92,7 +96,10 @@ The synchronization process is imperfect but should work in most
 cases, with the following assumptions:
 
 * You remember to manually run this tool before and after you're
-  done using the relevant applications.
+  done using the relevant applications. Alternatively, you can
+  also use `dropsync play <app name>` to first synchronize,
+  then play (assuming `play_path` has been set for the relevant
+  app), and then re-synchronize the app.
 * No one else is using the applications at the same time as you
   on your other computers.
 
