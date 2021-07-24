@@ -38,26 +38,40 @@ struct Args {
     arg_app: Option<String>,
 }
 
-fn sync_app(app: &config::AppConfig, confirm_if_app_is_newer: bool) {
+#[derive(PartialEq)]
+enum SyncResult {
+    AlreadySynced,
+    AppNewerThanDropbox,
+    DropboxNewerThanApp,
+    BothEmpty,
+    Conflict,
+}
+
+fn sync_app(app: &config::AppConfig, confirm_if_app_is_newer: bool) -> SyncResult {
     let dir_state = DirState::from_dir(&app.path);
     let dropbox_dir_state = DirState::from_dir(&app.dropbox_path);
     if dir_state.are_contents_equal_to(&dropbox_dir_state) {
         println!("  App state matches Dropbox. Nothing to do!");
+        SyncResult::AlreadySynced
     } else {
         if dir_state.are_contents_generally_newer_than(&dropbox_dir_state) {
             println!("  App state is newer than Dropbox.");
             copy_files_with_confirmation(&dir_state, &app.dropbox_path, confirm_if_app_is_newer);
+            SyncResult::AppNewerThanDropbox
         } else if dropbox_dir_state.are_contents_generally_newer_than(&dir_state) {
             println!("  Dropbox state is newer than app.");
             copy_files_with_confirmation(&dropbox_dir_state, &app.path, true);
+            SyncResult::DropboxNewerThanApp
         } else if dir_state.is_empty() && dropbox_dir_state.is_empty() {
             println!("  Both Dropbox and app state are empty. Nothing to do!");
+            SyncResult::BothEmpty
         } else {
             println!("  App and Dropbox state are in conflict; manual resolution required.");
             if ask::ask_yes_or_no("  Open folders in explorer (y/n) ? ") {
                 explorer::open_in_explorer(&app.path);
                 explorer::open_in_explorer(&app.dropbox_path);
             }
+            SyncResult::Conflict
         }
     }
 }
@@ -121,7 +135,9 @@ fn main() {
                 assert_eq!(args.cmd_play, true);
                 if let Some(play_path) = &config.play_path {
                     config.validate();
-                    sync_app(config, true);
+                    if sync_app(config, true) == SyncResult::Conflict {
+                        rprompt::prompt_reply_stdout("Press enter once you've resolved the conflict.").unwrap();
+                    }
                     play(play_path);
                     rprompt::prompt_reply_stdout("Done running app, press enter to re-sync App/Dropbox states.").unwrap();
                     // Don't ask anything if the app is newer, since we fully expect that to be the case.
