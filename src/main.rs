@@ -127,7 +127,7 @@ fn main() {
 
     if args.cmd_explore || args.cmd_play {
         let app_name = args.arg_app.unwrap();
-        if let Some(config) = app_configs.get(&app_name) {
+        if let Some(config) = util::get_case_insensitive(&app_configs, &app_name) {
             if args.cmd_explore {
                 explorer::open_in_explorer(&config.path);
                 explorer::open_in_explorer(&config.dropbox_path);
