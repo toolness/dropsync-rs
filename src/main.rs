@@ -12,7 +12,7 @@ mod explorer;
 
 use dir_state::DirState;
 
-const VERSION: &'static str = "1.2.0";
+const VERSION: &'static str = "1.3.0";
 
 const USAGE: &'static str = "
 Synchronize app files with Dropbox.
