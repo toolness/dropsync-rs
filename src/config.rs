@@ -70,8 +70,13 @@ pub fn load_config(hostname: &str, config_toml: &str, root_dropbox_path: &PathBu
             let rel_dropbox_path = PathBuf::from(norm_dropbox_path);
             let dropbox_path = root_dropbox_path.join(rel_dropbox_path);
             let disabled = get_app_config_bool(app_config, hostname, "disabled", false);
+            let play_root_path = if let Some(play_root_path_str) = get_optional_app_config_str(app_config, hostname, "play_root_path") {
+                Some(PathBuf::from(play_root_path_str))
+            } else {
+                None
+            };
             let play_path = if let Some(play_path_str) = get_optional_app_config_str(app_config, hostname, "play_path") {
-                Some(PathBuf::from(play_path_str))
+                Some(maybe_join_paths(play_root_path, normalize_path_slashes(play_path_str).into()))
             } else {
                 None
             };
@@ -81,6 +86,14 @@ pub fn load_config(hostname: &str, config_toml: &str, root_dropbox_path: &PathBu
         panic!("The top-level value of a config file should be a table!");
     }
     result
+}
+
+fn maybe_join_paths(first: Option<PathBuf>, second: PathBuf) -> PathBuf {
+    if let Some(root_path) = first {
+        root_path.join(second)
+    } else {
+        second
+    }
 }
 
 #[test]
