@@ -8,6 +8,7 @@ use self::super::util;
 pub struct AppConfig {
     pub name: String,
     pub path: PathBuf,
+    pub play_watch_dir: Option<PathBuf>,
     pub play_path: Option<PathBuf>,
     pub dropbox_path: PathBuf,
     pub disabled: bool,
@@ -76,11 +77,18 @@ pub fn load_config(hostname: &str, config_toml: &str, root_dropbox_path: &PathBu
                 None
             };
             let play_path = if let Some(play_path_str) = get_optional_app_config_str(app_config, hostname, "play_path") {
-                Some(maybe_join_paths(play_root_path, normalize_path_slashes(play_path_str).into()))
+                Some(maybe_join_paths(&play_root_path, normalize_path_slashes(play_path_str).into()))
             } else {
                 None
             };
-            result.insert(name.clone(), AppConfig { name: name.clone(), path, dropbox_path, disabled, play_path });
+            result.insert(name.clone(), AppConfig {
+                name: name.clone(),
+                path,
+                dropbox_path,
+                disabled,
+                play_path,
+                play_watch_dir: play_root_path
+            });
         }
     } else {
         panic!("The top-level value of a config file should be a table!");
@@ -88,7 +96,7 @@ pub fn load_config(hostname: &str, config_toml: &str, root_dropbox_path: &PathBu
     result
 }
 
-fn maybe_join_paths(first: Option<PathBuf>, second: PathBuf) -> PathBuf {
+fn maybe_join_paths(first: &Option<PathBuf>, second: PathBuf) -> PathBuf {
     if let Some(root_path) = first {
         root_path.join(second)
     } else {
@@ -106,15 +114,15 @@ fn test_load_config() {
     let mut expected = HashMap::new();
     expected.insert(
         String::from("app1"),
-        AppConfig { name: String::from("app1"), path: PathBuf::from("C:\\myapp1\\stuff"), dropbox_path: PathBuf::from("./MyAppData/app1"), disabled: false, play_path: None }
+        AppConfig { name: String::from("app1"), path: PathBuf::from("C:\\myapp1\\stuff"), dropbox_path: PathBuf::from("./MyAppData/app1"), disabled: false, play_path: None, play_watch_dir: None }
     );
     expected.insert(
         String::from("app2"),
-        AppConfig { name: String::from("app2"), path: PathBuf::from("F:\\myapp2\\stuff"), dropbox_path: PathBuf::from("./MyAppData/app2"), disabled: false, play_path: None }
+        AppConfig { name: String::from("app2"), path: PathBuf::from("F:\\myapp2\\stuff"), dropbox_path: PathBuf::from("./MyAppData/app2"), disabled: false, play_path: None, play_watch_dir: None }
     );
     expected.insert(
         String::from("app3"),
-        AppConfig { name: String::from("app3"), path: PathBuf::from("G:\\app3"), dropbox_path: PathBuf::from("./MyAppData/app3"), disabled: true, play_path: None }
+        AppConfig { name: String::from("app3"), path: PathBuf::from("G:\\app3"), dropbox_path: PathBuf::from("./MyAppData/app3"), disabled: true, play_path: None, play_watch_dir: None }
     );
 
     assert_eq!(expected, configs);

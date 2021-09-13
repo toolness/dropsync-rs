@@ -1,6 +1,6 @@
 [package]
 name = "dropsync"
-version = "1.3.1"
+version = "1.4.0"
 authors = ["Atul Varma <varmaa@gmail.com>"]
 edition = "2018"
 
@@ -12,4 +12,5 @@ dirs = "2.0"
 gethostname = "0.2.1"
 rprompt = "1.0.5"
 docopt = "1"
+sysinfo = "0.20"
 serde = { version = "1", features = ["derive"] }

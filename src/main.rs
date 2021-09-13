@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::fs;
 use serde::Deserialize;
+use sysinfo::{System, SystemExt, ProcessExt};
 
 mod dir_state;
 mod dropbox;
@@ -29,6 +30,8 @@ Options:
   -h --help     Show this screen.
   --version     Show version.
 ";
+
+const WATCH_DIR_MAX_SECONDS: u64 = 5;
 
 #[derive(Debug, Deserialize)]
 struct Args {
@@ -91,7 +94,7 @@ fn copy_files_with_confirmation(from_dir: &DirState, to_dir: &PathBuf, should_as
     }
 }
 
-fn play(executable: &PathBuf) {
+fn play(executable: &PathBuf, watch_dir: &Option<PathBuf>) {
     let dir = executable.parent()
         .expect("executable should have a parent directory"); 
     let mut child = Command::new(executable)
@@ -100,6 +103,23 @@ fn play(executable: &PathBuf) {
         .spawn()
         .expect("process failed to execute");
     child.wait().expect("failed to wait on child");
+
+    if let Some(watch_dir) = watch_dir {
+        let mut sys = System::new();
+        let mut seconds_without_exe = 0;
+        println!("Waiting for no processes to be running in app directory for {} seconds.", WATCH_DIR_MAX_SECONDS);
+        while seconds_without_exe < WATCH_DIR_MAX_SECONDS {
+            std::thread::sleep(std::time::Duration::from_secs(1));
+            seconds_without_exe += 1;
+            sys.refresh_processes();
+            for (_, process) in sys.processes() {
+                if process.exe().starts_with(watch_dir) {
+                    seconds_without_exe = 0;
+                }
+            }
+        }
+        println!("Looks like the app is finished.");
+    }
 }
 
 fn main() {
@@ -138,8 +158,10 @@ fn main() {
                     if sync_app(config, true) == SyncResult::Conflict {
                         rprompt::prompt_reply_stdout("Press enter once you've resolved the conflict.").unwrap();
                     }
-                    play(play_path);
-                    rprompt::prompt_reply_stdout("Done running app, press enter to re-sync App/Dropbox states.").unwrap();
+                    play(play_path, &config.play_watch_dir);
+                    if config.play_watch_dir.is_none() {
+                        rprompt::prompt_reply_stdout("Done running app, press enter to re-sync App/Dropbox states.").unwrap();
+                    }
                     // Don't ask anything if the app is newer, since we fully expect that to be the case.
                     sync_app(config, false);
                 } else {
