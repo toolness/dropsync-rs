@@ -55,10 +55,20 @@ synchronize and has the following entries:
   data will be synchronized.
 * `disabled` is an optional boolean; if `true`, the application
   entry will be ignored.
-* `play_path` is the optional absolute path to where the
+* `play_path` is the optional path to where the
   application's executable is. If provided, you will be able to
   use the `dropsync play <app name>` command, which may be
   convenient.
+* `play_root_path` is an optional absolute path to an ancestor
+  directory of the application's executable. If supplied, `play_path`
+  will be appended to it (otherwise, `play_path` should be absolute).
+
+  Most significantly, this path will also be used as the root directory
+  to watch to determine whether the app has finished running. If,
+  for instance, the `play_path` points to a "launcher" that launches
+  the actual app, which is also under `play_root_path`, then providing
+  this value will ensure that dropsync doesn't try to synchronize
+  files until after the actual app has finished running.
 
 If different computers have the applications at different locations, a
 separate subsection denoted by the computer's hostname can store
