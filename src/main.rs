@@ -10,6 +10,7 @@ mod util;
 mod ask;
 mod config;
 mod explorer;
+mod file_filter;
 
 use dir_state::DirState;
 
