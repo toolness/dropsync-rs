@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::fs::DirEntry;
 use glob::Pattern;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -7,16 +7,16 @@ pub struct FileFilter {
 }
 
 impl FileFilter {
-    pub fn is_file_included<T: AsRef<Path>>(&self, path: T) -> bool {
+    pub fn is_file_included(&self, entry: &DirEntry) -> bool {
         if let Some(pattern) = &self.include_only {
-            pattern.matches_path(path.as_ref())
+            pattern.matches_path(&entry.path())
         } else {
             true
         }
     }
 
-    pub fn is_file_excluded<T: AsRef<Path>>(&self, path: T) -> bool {
-        !self.is_file_included(path)
+    pub fn is_file_excluded(&self, entry: &DirEntry) -> bool {
+        !self.is_file_included(entry)
     }
 }
 

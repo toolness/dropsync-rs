@@ -36,7 +36,7 @@ impl DirState {
         let mut subdirs = HashMap::new();
         for result in fs::read_dir(path).unwrap() {
             let entry = result.unwrap();
-            if file_filter.is_file_excluded(&entry.path()) {
+            if file_filter.is_file_excluded(&entry) {
                 continue;
             }
             let filename = String::from(entry.file_name().to_string_lossy());
@@ -133,7 +133,7 @@ impl DirState {
     pub fn remove_extraneous_files_from(&self, root: &PathBuf) {
         for result in fs::read_dir(root).unwrap() {
             let entry = result.unwrap();
-            if self.file_filter.is_file_excluded(&entry.path()) {
+            if self.file_filter.is_file_excluded(&entry) {
                 continue;
             }
             let filepath = entry.path();
