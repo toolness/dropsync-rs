@@ -14,3 +14,4 @@ rprompt = "1.0.5"
 docopt = "1"
 sysinfo = "0.20"
 serde = { version = "1", features = ["derive"] }
+glob = "0.3.0"

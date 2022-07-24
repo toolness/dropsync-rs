@@ -1,20 +1,27 @@
-use std::path::PathBuf;
+use std::path::Path;
+use glob::Pattern;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct FileFilter();
+pub struct FileFilter {
+    include_only: Option<Pattern>
+}
 
 impl FileFilter {
-    pub fn is_file_included(&self, _path: &PathBuf) -> bool {
-        true
+    pub fn is_file_included<T: AsRef<Path>>(&self, path: T) -> bool {
+        if let Some(pattern) = &self.include_only {
+            pattern.matches_path(path.as_ref())
+        } else {
+            true
+        }
     }
 
-    pub fn is_file_excluded(&self, path: &PathBuf) -> bool {
-        !self.is_file_included(&path)
+    pub fn is_file_excluded<T: AsRef<Path>>(&self, path: T) -> bool {
+        !self.is_file_included(path)
     }
 }
 
 impl Default for FileFilter {
     fn default() -> Self {
-        Self()
+        Self { include_only: None }
     }
 }
