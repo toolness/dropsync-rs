@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use std::collections::HashMap;
 use std::fs;
 
+use crate::file_filter::FileFilter;
+
 #[derive(Debug, PartialEq)]
 struct FileState {
     pub modified: u64,
@@ -22,27 +24,31 @@ impl FileState {
 
 #[derive(Debug, PartialEq)]
 pub struct DirState {
+    file_filter: FileFilter,
     path: PathBuf,
     files: HashMap<String, FileState>,
     subdirs: HashMap<String, DirState>,
 }
 
 impl DirState {
-    pub fn from_dir(path: &PathBuf) -> Self {
+    pub fn from_dir(path: &PathBuf, file_filter: &FileFilter) -> Self {
         let mut files = HashMap::new();
         let mut subdirs = HashMap::new();
         for result in fs::read_dir(path).unwrap() {
             let entry = result.unwrap();
+            if file_filter.is_file_excluded(&entry.path()) {
+                continue;
+            }
             let filename = String::from(entry.file_name().to_string_lossy());
             let metadata = entry.metadata().unwrap();
             if metadata.is_dir() {
                 let subdir = path.join(&filename);
-                subdirs.insert(filename, DirState::from_dir(&subdir));
+                subdirs.insert(filename, DirState::from_dir(&subdir, &file_filter));
             } else {
                 files.insert(filename, FileState::from_metadata(&metadata));
             }
         }
-        DirState { path: path.clone(), files, subdirs }
+        DirState { path: path.clone(), file_filter: file_filter.clone(), files, subdirs }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -127,6 +133,9 @@ impl DirState {
     pub fn remove_extraneous_files_from(&self, root: &PathBuf) {
         for result in fs::read_dir(root).unwrap() {
             let entry = result.unwrap();
+            if self.file_filter.is_file_excluded(&entry.path()) {
+                continue;
+            }
             let filepath = entry.path();
             let filename = String::from(entry.file_name().to_string_lossy());
             let metadata = entry.metadata().unwrap();
@@ -147,6 +156,8 @@ impl DirState {
 
 #[test]
 fn test_dirstate() {
+    let file_filter = FileFilter::default();
+
     // Setup: create/clear the temporary test dir.
     let tmp_dir = PathBuf::from(".test_dirstate");
     if tmp_dir.exists() {
@@ -156,20 +167,20 @@ fn test_dirstate() {
 
     // Copy the source test dir into the temp test dir.
     let src_dir = PathBuf::from("test-data/dirstate_test");
-    let src_state = DirState::from_dir(&src_dir);
+    let src_state = DirState::from_dir(&src_dir, &file_filter);
     assert!(!src_state.is_empty());
     src_state.copy_into(&tmp_dir);
 
-    let mut tmp_state = DirState::from_dir(&tmp_dir);
+    let mut tmp_state = DirState::from_dir(&tmp_dir, &file_filter);
     assert!(src_state.are_contents_equal_to(&tmp_state));
     assert!(tmp_state.are_contents_equal_to(&src_state));
 
     // Make a subdirectory in the temp test dir.
     let tmp_subdir = tmp_dir.join("another_subdir");
     fs::create_dir(&tmp_subdir).unwrap();
-    assert!(DirState::from_dir(&tmp_subdir).is_empty());
+    assert!(DirState::from_dir(&tmp_subdir, &file_filter).is_empty());
 
-    tmp_state = DirState::from_dir(&tmp_dir);
+    tmp_state = DirState::from_dir(&tmp_dir, &file_filter);
     assert!(!src_state.are_contents_equal_to(&tmp_state));
 
     // Add a file to the temp test dir.
@@ -178,7 +189,7 @@ fn test_dirstate() {
 
     // Remove files from the temp test dir not in the source test dir.
     src_state.remove_extraneous_files_from(&tmp_dir);
-    tmp_state = DirState::from_dir(&tmp_dir);
+    tmp_state = DirState::from_dir(&tmp_dir, &file_filter);
     assert!(src_state.are_contents_equal_to(&tmp_state));
 
     // Teardown: remove the temporary test dir.

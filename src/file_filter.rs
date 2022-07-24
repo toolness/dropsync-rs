@@ -1,17 +1,20 @@
 use std::path::PathBuf;
 
-pub trait FileFilter {
-    fn is_file_included(&self, path: &PathBuf) -> bool;
+#[derive(Debug, Clone, PartialEq)]
+pub struct FileFilter();
 
-    fn is_file_excluded(&self, path: &PathBuf) -> bool {
+impl FileFilter {
+    pub fn is_file_included(&self, _path: &PathBuf) -> bool {
+        true
+    }
+
+    pub fn is_file_excluded(&self, path: &PathBuf) -> bool {
         !self.is_file_included(&path)
     }
 }
 
-pub struct DefaultFileFilter();
-
-impl FileFilter for DefaultFileFilter {
-    fn is_file_included(&self, _path: &PathBuf) -> bool {
-        true
+impl Default for FileFilter {
+    fn default() -> Self {
+        Self()
     }
 }
