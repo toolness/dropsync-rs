@@ -7,6 +7,10 @@ pub struct FileFilter {
 }
 
 impl FileFilter {
+    pub fn new(include_only: Option<Pattern>) -> Self {
+        FileFilter { include_only }
+    }
+
     pub fn is_file_included(&self, entry: &DirEntry) -> bool {
         if let Some(pattern) = &self.include_only {
             pattern.matches_path(&entry.path())

@@ -66,7 +66,7 @@ static CONFLICT_CHOICES: [ask::Choice<ConflictChoice>; 3] = [
 ];
 
 fn sync_app(app: &config::AppConfig, confirm_if_app_is_newer: bool) -> SyncResult {
-    let file_filter = FileFilter::default();
+    let file_filter = FileFilter::new(app.include_only.clone());
     let dir_state = DirState::from_dir(&app.path, &file_filter);
     let dropbox_dir_state = DirState::from_dir(&app.dropbox_path, &file_filter);
     if dir_state.are_contents_equal_to(&dropbox_dir_state) {
