@@ -59,11 +59,11 @@ fn sync_app(app: &config::AppConfig, confirm_if_app_is_newer: bool) -> SyncResul
     } else {
         if dir_state.are_contents_generally_newer_than(&dropbox_dir_state) {
             println!("  App state is newer than Dropbox.");
-            copy_files_with_confirmation(&dir_state, &app.dropbox_path, confirm_if_app_is_newer);
+            copy_files_with_maybe_confirmation(&dir_state, &app.dropbox_path, confirm_if_app_is_newer);
             SyncResult::AppNewerThanDropbox
         } else if dropbox_dir_state.are_contents_generally_newer_than(&dir_state) {
             println!("  Dropbox state is newer than app.");
-            copy_files_with_confirmation(&dropbox_dir_state, &app.path, true);
+            copy_files_with_maybe_confirmation(&dropbox_dir_state, &app.path, true);
             SyncResult::DropboxNewerThanApp
         } else if dir_state.is_empty() && dropbox_dir_state.is_empty() {
             println!("  Both Dropbox and app state are empty. Nothing to do!");
@@ -79,7 +79,7 @@ fn sync_app(app: &config::AppConfig, confirm_if_app_is_newer: bool) -> SyncResul
     }
 }
 
-fn copy_files_with_confirmation(from_dir: &DirState, to_dir: &PathBuf, should_ask: bool) {
+fn copy_files_with_maybe_confirmation(from_dir: &DirState, to_dir: &PathBuf, should_ask: bool) {
     let yes = if should_ask {
         ask::ask_yes_or_no("  Proceed with synchronization (y/n) ? ")
     } else {
