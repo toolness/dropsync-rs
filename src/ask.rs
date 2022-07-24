@@ -18,10 +18,10 @@ pub fn ask_yes_or_no(prompt: &str) -> bool {
     }
 }
 
-fn parse_choice<T: Copy>(input: &str, choices: &Vec<Choice<T>>) -> Option<T> {
+fn parse_choice<T: Copy, U: AsRef<[Choice<T>]>>(input: &str, choices: U) -> Option<T> {
     let lowercase_input = input.to_lowercase();
 
-    for choice in choices {
+    for choice in choices.as_ref() {
         let lowercase_name = choice.name.to_lowercase();
         if lowercase_input == lowercase_name {
             return Some(choice.value)
@@ -37,8 +37,19 @@ pub struct Choice<T> {
     pub value: T
 }
 
-pub fn ask_with_choices<T>(prompt: &str, choices: &Vec<Choice<T>>) -> T {
-    unimplemented!()
+pub fn ask_with_choices<T: Copy, U: AsRef<[Choice<T>]>>(indentation: &str, prompt: &str, choices: U) -> T {
+    println!("{}Options:", indentation);
+    for choice in choices.as_ref() {
+        println!("{}  {}", indentation, choice.name);
+    }
+    
+    let prompt = format!("{}{}", indentation, prompt);
+    loop {
+        let reply = rprompt::prompt_reply_stdout(&prompt).unwrap();
+        if let Some(choice) = parse_choice(&reply, &choices) {
+            return choice;
+        }
+    }
 }
 
 #[test]
@@ -58,7 +69,7 @@ fn test_parse_choice() {
         Bar
     }
 
-    let choices = vec![
+    let choices = [
         Choice { name: "foo", value: Boop::Foo },
         Choice { name: "bar", value: Boop::Bar },
     ];

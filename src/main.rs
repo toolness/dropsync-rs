@@ -50,6 +50,19 @@ enum SyncResult {
     Conflict,
 }
 
+#[derive(PartialEq, Copy, Clone)]
+enum ConflictChoice {
+    UseApp,
+    UseDropbox,
+    Explore
+}
+
+static CONFLICT_CHOICES: [ask::Choice<ConflictChoice>; 3] = [
+    ask::Choice { name: "use app", value: ConflictChoice::UseApp },
+    ask::Choice { name: "use dropbox", value: ConflictChoice::UseDropbox },
+    ask::Choice { name: "explore", value: ConflictChoice::Explore },
+];
+
 fn sync_app(app: &config::AppConfig, confirm_if_app_is_newer: bool) -> SyncResult {
     let dir_state = DirState::from_dir(&app.path);
     let dropbox_dir_state = DirState::from_dir(&app.dropbox_path);
@@ -70,11 +83,22 @@ fn sync_app(app: &config::AppConfig, confirm_if_app_is_newer: bool) -> SyncResul
             SyncResult::BothEmpty
         } else {
             println!("  App and Dropbox state are in conflict; manual resolution required.");
-            if ask::ask_yes_or_no("  Open folders in explorer (y/n) ? ") {
-                explorer::open_in_explorer(&app.path);
-                explorer::open_in_explorer(&app.dropbox_path);
+            let choice = ask::ask_with_choices("  ", "How do you want to proceed? ", &CONFLICT_CHOICES);
+            match choice {
+                ConflictChoice::UseApp => {
+                    copy_files_with_maybe_confirmation(&dir_state, &app.dropbox_path, false);
+                    SyncResult::AppNewerThanDropbox
+                }
+                ConflictChoice::UseDropbox => {
+                    copy_files_with_maybe_confirmation(&dropbox_dir_state, &app.path, false);
+                    SyncResult::DropboxNewerThanApp
+                }
+                ConflictChoice::Explore => {
+                    explorer::open_in_explorer(&app.path);
+                    explorer::open_in_explorer(&app.dropbox_path);
+                    SyncResult::Conflict
+                }
             }
-            SyncResult::Conflict
         }
     }
 }

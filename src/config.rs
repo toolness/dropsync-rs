@@ -17,6 +17,10 @@ pub struct AppConfig {
 impl AppConfig {
     pub fn validate(&self) {
         util::ensure_path_exists(&self.path);
+
+        if !&self.dropbox_path.exists() {
+            std::fs::create_dir_all(&self.dropbox_path).unwrap();
+        }
         util::ensure_path_exists(&self.dropbox_path);
     }
 }
