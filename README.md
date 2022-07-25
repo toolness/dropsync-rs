@@ -55,6 +55,8 @@ synchronize and has the following entries:
   data will be synchronized.
 * `disabled` is an optional boolean; if `true`, the application
   entry will be ignored.
+* `include_only` is a glob pattern, like `*.sv`, which makes dropsync
+  only synchronize files that match the pattern.
 * `play_path` is the optional path to where the
   application's executable is. If provided, you will be able to
   use the `dropsync play <app name>` command, which may be
