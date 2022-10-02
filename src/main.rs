@@ -14,6 +14,7 @@ mod explorer;
 mod file_filter;
 
 use dir_state::DirState;
+use util::get_primary_hostname;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -149,14 +150,19 @@ fn play(executable: &PathBuf, watch_dir: &Option<PathBuf>) {
     println!("Looks like the app is finished.");
 }
 
+fn get_hostname() -> String {
+    let raw_hostname = gethostname::gethostname();
+    let hostname = raw_hostname.to_string_lossy();
+    get_primary_hostname(hostname)
+}
+
 fn main() {
     let version = VERSION.to_owned();
     let args: Args = docopt::Docopt::new(USAGE)
         .and_then(|d| d.version(Some(version)).deserialize())
         .unwrap_or_else(|e| e.exit());
 
-    let raw_hostname = gethostname::gethostname();
-    let hostname = raw_hostname.to_string_lossy();
+    let hostname = get_hostname();
 
     let dropbox_dir = dropbox::get_dropbox_dir();
     let cfg_file = dropbox_dir.join("dropsync.toml");

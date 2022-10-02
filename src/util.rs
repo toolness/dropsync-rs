@@ -28,3 +28,18 @@ fn test_get_case_insensitive() {
   assert_eq!(get_case_insensitive(&h, &"BOOP".to_owned()), Some(&1));
   assert_eq!(get_case_insensitive(&h, &"meh".to_owned()), None);
 }
+
+pub fn get_primary_hostname<T: AsRef<str>>(hostname: T) -> String {
+  if let Some(index) = hostname.as_ref().find(".") {
+    hostname.as_ref().split_at(index).0.into()
+  } else {
+    hostname.as_ref().into()
+  }
+}
+
+#[test]
+fn test_get_primary_hostname() {
+  assert_eq!(get_primary_hostname("boop"), "boop".to_owned());
+  assert_eq!(get_primary_hostname("boop.local"), "boop".to_owned());
+  assert_eq!(get_primary_hostname("boop.blap.local"), "boop".to_owned());
+}
